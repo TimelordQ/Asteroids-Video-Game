@@ -13,6 +13,7 @@ Here's a screen shot of what to expect:
 
 ![ASteroidsMAIN](https://user-images.githubusercontent.com/4022018/114669769-cb7dc200-9cf1-11eb-9826-271168dce250.jpg)
 
-This is dependent on the Open Source Project NUADIO, available here: https://github.com/naudio/NAudio
+This project was created with Visual Studio 2017 Community Edition Available here: https://visualstudio.microsoft.com/vs/older-downloads/
+And is also dependent on the Open Source Project NUADIO, available here: https://github.com/naudio/NAudio
 
 Enjoy!
