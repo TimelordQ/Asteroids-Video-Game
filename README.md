@@ -9,4 +9,6 @@ While I am pretty happy with this first pass, I do consider it to be in the alph
 
 If you're interested in a code walk through, come back, I'll post a video here which will step you through the code and my reasoning as I reverse engineered the original game to come up with this, as can be seen in the sometimes spaghetti nature of the code which I'll explain in the code walk through. 
 
+This is dependent on the Open Source Project NUADIO, available here: https://github.com/naudio/NAudio
+
 Enjoy!
