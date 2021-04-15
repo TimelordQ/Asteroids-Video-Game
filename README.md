@@ -17,7 +17,8 @@ Dependencies:
 
 <ul>
   <li>Visual Studio 2017 Community Edition Available here: https://visualstudio.microsoft.com/vs/older-downloads/</li>
-  <li>NUADIO, available here: https://github.com/naudio/NAudio</li>
   </ul>
+
+That's it!
 
 Enjoy!
