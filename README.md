@@ -1,6 +1,12 @@
 # Asteroids
 Asteroids (1979) recreated with love and TLC in C#
 
+ARROW KEYS LEFT+RIGHT TO ROTATE
+ARROW KEY UP TO THRUST
+ARROW KEY DOWN TO ENTER HYPERSPACE
+SPACE BAR TO FIRE
+ESCAPE TO EXIT
+
 In this project, you'll find my first pass of re-creating Atari's 1979 version of Asteroids entirely hand coded in C# - with (this is a compromise) minimal fixed asset dependencies of any kind other than code itself (eg no textures, no models, etc). The goal with this project is to re-create, from the ground up, a perfect replica of the experience of the original acrade game in C#. I hope you agree I've done a decent job at this so far. 
 
 In this video, https://www.youtube.com/watch?v=2-iUAQ49xC8, I demonstrate a short full play through of this source code.
