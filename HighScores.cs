@@ -112,7 +112,7 @@ namespace ASTEROIDS
         {
             int nScore = 0;
             if (m_lstHighScores.Count > 0)
-                nScore = m_lstHighScores[0].Score;
+                nScore = m_lstHighScores.OrderByDescending(hs => hs.Score).ToList()[0].Score;
 
             return nScore;
         }

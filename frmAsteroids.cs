@@ -4,9 +4,6 @@
 //          - FIX deceleration of player's ship - it gets a little wonky with the angular momentum at slower speeds. 
 //          - FIX: UFO shows up on 'PUSH START' screen. Need to add in code to do this.
 //          - FIX 'random' direction of asteroids where randomness doesn't seem to random..... .
-//  FIX ORDERING OF HIGH SCORES!!!!!!!!!!!!!
-//  Fix sounds of projectiles to hear every projectile fired. 
-//  Fix background music - inconsistent and needs to move faster.... 
 
 using System;
 using System.Collections.Generic;
@@ -64,7 +61,7 @@ namespace ASTEROIDS
 
         public long m_NextRandomUFOEncounter;
 
-        public Sounds mySounds = new Sounds();
+        public Sounds mySounds;
 
         // Sound Related Variables
         private long m_tckNextBGSound;
@@ -94,6 +91,7 @@ namespace ASTEROIDS
             m_ufoprojectiles = new Projectiles( this );
             m_ufo = new UFO(this);
             m_EnterHighScoreScreen = new EnterHighScoreScreen(this);
+            mySounds = new Sounds( this );
             m_ufo.position = new Point(250, 250); // TODO: REMOVE, just for testing!
 
             //this.SetStyle(ControlStyles.OptimizedDoubleBuffer, true);
@@ -279,8 +277,10 @@ namespace ASTEROIDS
                         m_AmbientAccelerator = 1.0;
                     else if ((System.DateTime.Now.Ticks - m_nTicksSinceStart) < (20 * TICKSPERSECOND))
                         m_AmbientAccelerator = 0.8;
-                    else
+                    else if ((System.DateTime.Now.Ticks - m_nTicksSinceStart) < (30 * TICKSPERSECOND))
                         m_AmbientAccelerator = 0.6;
+                    else
+                        m_AmbientAccelerator = 0.4;
 
                     m_ufo.spawnUFO(m_mainScoreBoard.CURLEVEL, System.DateTime.Now.Ticks - m_nTicksSinceStart);
                     m_NextRandomUFOEncounter = System.DateTime.Now.AddTicks(TICKSPERSECOND * randomizer.Next(5, 20)).Ticks;
@@ -365,7 +365,7 @@ namespace ASTEROIDS
                     m_bBGSoundLow = !m_bBGSoundLow;
                     mySounds.library[(m_bBGSoundLow) ? Sounds.SOUNDS.BGMUSICLOW : Sounds.SOUNDS.BGMUSICHIGH].Play(); //  0, Microsoft.DirectX.DirectSound.BufferPlayFlags.Default );
                 }
-                if (m_bPlayerIsThrusting)
+                if (!mySounds.library[Sounds.SOUNDS.THRUST].IsPlaying()  && m_bPlayerIsThrusting )
                 {
                     mySounds.library[Sounds.SOUNDS.THRUST].Play(); //  0, Microsoft.DirectX.DirectSound.BufferPlayFlags.Default);
                 }

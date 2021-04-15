@@ -139,16 +139,18 @@ namespace ASTEROIDS
                     afh.TextPosition = new Point( m_retainStartMsgLeft.X, m_retainStartMsgLeft.Y + 90 );
                     afh.Draw();
 
-                    for (int nX = 0; nX < m_highScores.list.Count; nX++)
+                    int nX = 0;
+                    foreach( HighScore hs in m_highScores.list.OrderByDescending( hs => hs.Score ) )
                     {
-                        String replaceUnderscores = m_highScores.list[nX].Initials.Replace('_', ' ');
+                        String replaceUnderscores = hs.Initials.Replace('_', ' ');
                         afh.Text = String.Format("{0}{1}.{2,5} {3}",
                                             ( ( nX + 1 ).ToString().Length == 1 )?" ":"",
                                             nX + 1,
-                                            m_highScores.list[nX].Score,
+                                            hs.Score,
                                             replaceUnderscores);
                         afh.TextPosition = new Point(m_retainStartMsgLeft.X-25, m_retainStartMsgLeft.Y + 175 + ( nX * 40) );
                         afh.Draw();
+                        nX += 1;
                     }
                 }
 

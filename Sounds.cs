@@ -11,6 +11,7 @@
 // Stack Overflow question's answer:
 // https://stackoverflow.com/questions/6168954/playing-sound-byte-in-c-sharp
 // 
+// }
 // ------------------------------------------------------------------------------------------------------
 using System;
 using System.Collections.Generic;
@@ -20,13 +21,19 @@ using System.Text;
 using System.Threading.Tasks;
 using System.Media;
 using System.Windows.Media;
-using NAudio.Wave;
+using System.Runtime.InteropServices;
+using System.Threading;
 //using Microsoft.DirectX.DirectSound;
 
 namespace ASTEROIDS
 {
     public class Sounds
     {
+        private frmAsteroids canvas;
+        [DllImport("winmm.dll")]
+        static extern Int32 mciSendString(string command, IntPtr alwaysNull, int bufferSize, IntPtr hwndCallback);
+
+        
         public enum SOUNDS
         {
             PURETONE = 0,
@@ -42,8 +49,9 @@ namespace ASTEROIDS
         }
         public Dictionary<SOUNDS, FX> library = new Dictionary<SOUNDS, FX>();
 
-        public Sounds()
+        public Sounds( frmAsteroids rootForm )
         {
+            canvas = rootForm;
             //FileStream fs = new FileStream("SHIT2.WAV", FileMode.OpenOrCreate);
             //fs.Write(generateAudio(SOUNDS.PURETONE), 0, generateAudio(SOUNDS.PURETONE).Length);
             //fs.Close();
@@ -60,43 +68,65 @@ namespace ASTEROIDS
             library.Add(SOUNDS.SPACESHIPSMALL, generateAudio(SOUNDS.SPACESHIPSMALL));
         }
 
+        ~Sounds()
+        {
+            mciSendString("close all", IntPtr.Zero, 0, IntPtr.Zero);
+        }
+
         private FX generateAudio(SOUNDS curSnd)
         {
-            byte[] buff;
+            string sFileName = "";
+            byte[] buff = null;
             List<short> ssData = new List<short>();
+
             switch (curSnd)
             {
                 case SOUNDS.PURETONE:
                     ssData.AddRange(ShapeSoundSquare(255, 1000, 20000));
+                    sFileName = "PURETONE.WAV";
                     break;
                 case SOUNDS.BGMUSICLOW:
                     ssData.AddRange(ShapeSoundSquare(81, 100, 2500));
+                    sFileName = "BGMUSICLOW.WAV";
                     break;
                 case SOUNDS.BGMUSICHIGH:
                     ssData.AddRange(ShapeSoundSquare(87, 100, 2500));
+                    sFileName = "BGMUSICHIGH.WAV";
                     break;
                 case SOUNDS.THRUST:
                     ssData.AddRange(ShapeSoundThrust());
+                    sFileName = "THRUST.WAV";
                     break;
                 case SOUNDS.PROJECTILE:
-                    //ssData.AddRange(ShapeSoundProjectile());
-                    buff = File.ReadAllBytes("Projectile.wav");
-                    return new FX(buff);
+                    buff = new byte[AsteroidsResources.Projectile.Length];
+                    AsteroidsResources.Projectile.Read(buff, 0, (int) AsteroidsResources.Projectile.Length );
+                    sFileName = "Projectile.wav";
+                    break;
                 case SOUNDS.DESTROYEDASTEROIDSMALL:
-                    buff = File.ReadAllBytes("DestroyedAsteroidSmall.wav");
-                    return new FX(buff);
+                    buff = new byte[AsteroidsResources.DestroyedAsteroidSmall.Length];
+                    AsteroidsResources.DestroyedAsteroidSmall.Read(buff, 0, (int)AsteroidsResources.DestroyedAsteroidSmall.Length);
+                    sFileName = "DestroyedAsteroidSmall.wav";
+                    break;
                 case SOUNDS.DESTROYEDASTEROIDMEDIUM:
-                    buff = File.ReadAllBytes("DestroyedAsteroidMedium.wav");
-                    return new FX(buff);
+                    buff = new byte[AsteroidsResources.DestroyedAsteroidMedium.Length];
+                    AsteroidsResources.DestroyedAsteroidMedium.Read(buff, 0, (int)AsteroidsResources.DestroyedAsteroidMedium.Length);
+                    sFileName = "DestroyedAsteroidMedium.wav";
+                    break;
                 case SOUNDS.DESTROYEDASTEROIDLARGE:
-                    buff = File.ReadAllBytes("DestroyedAsteroidlarge.wav");
-                    return new FX(buff);
+                    buff = new byte[AsteroidsResources.DestroyedAsteroidLarge.Length];
+                    AsteroidsResources.DestroyedAsteroidLarge.Read(buff, 0, (int)AsteroidsResources.DestroyedAsteroidLarge.Length);
+                    sFileName = "DestroyedAsteroidlarge.wav";
+                    break;
                 case SOUNDS.SPACESHIPLARGE:
-                    buff = File.ReadAllBytes("SpaceShipLarge.wav");
-                    return new FX(buff);
+                    buff = new byte[AsteroidsResources.SpaceShipLarge.Length];
+                    AsteroidsResources.SpaceShipLarge.Read(buff, 0, (int)AsteroidsResources.SpaceShipLarge.Length);
+                    sFileName = "SpaceShipLarge.wav";
+                    break;
                 case SOUNDS.SPACESHIPSMALL:
-                    buff = File.ReadAllBytes("SpaceShipSmall.wav");
-                    return new FX(buff);
+                    buff = new byte[AsteroidsResources.SpaceShipSmall.Length];
+                    AsteroidsResources.SpaceShipSmall.Read(buff, 0, (int)AsteroidsResources.SpaceShipSmall.Length);
+                    sFileName = "SpaceShipSmall.wav";
+                    break;
             }
 
             List<byte> data = new List<byte>();
@@ -111,17 +141,19 @@ namespace ASTEROIDS
             tempBytes.AddRange(format.GetBytes());
             tempBytes.AddRange(dc.GetBytes());
 
-            if (curSnd == SOUNDS.PROJECTILE )
-            {
-                if (File.Exists("Projectile.wav"))
-                    File.Delete("Projectile.wav");
+            string sFullPath = createWaveOutput(curSnd, sFileName, (buff==null)? tempBytes.ToArray(): buff);
 
-                FileStream fs = new FileStream("Projectile.wav", FileMode.CreateNew);
-                fs.Write(tempBytes.ToArray(), 0, tempBytes.ToArray().Length);
-                fs.Close();
+            return new FX(canvas.Handle, curSnd, sFullPath); //  SoundPlayer(ms);// SecondaryBuffer(ms, device);
+        }
 
-            }
-            return new FX(tempBytes.ToArray()); //  SoundPlayer(ms);// SecondaryBuffer(ms, device);
+        private string createWaveOutput(Sounds.SOUNDS curSnd, string sFileName, byte[] data)
+        {
+            string sFULL = String.Format("{0}{1}", Path.GetTempPath(), sFileName);
+            if (!File.Exists(sFULL)) // only attempt to create the file if it's not already there.
+                File.WriteAllBytes(sFULL, data);
+
+            return sFULL;
+
         }
 
         public List<short> ShapeSoundSquare(UInt16 frequency, int msDuration, UInt16 volume)
@@ -149,7 +181,7 @@ namespace ASTEROIDS
         public List<short> ShapeSoundThrust()
         {
             UInt16 frequency = 92; //  53; //  415 / 2 / 2 / 2 /2 /2 /2; // 53;
-            int msDuration = 60000; //  287; // 60 seconds, a huge buffer for the sound, but it will sound continuous... 
+            int msDuration = 500; //  287; // 60 seconds, a huge buffer for the sound, but it will sound continuous... 
             List<short> data = new List<short>();
 
             const double TAU = 2 * Math.PI;
@@ -255,52 +287,142 @@ namespace ASTEROIDS
 
     public class FX
     {
-        private BlockAlignReductionStream myReduce;
-        private Wave16ToFloatProvider myProvider;
-        private WaveFileReader myWave;
-        private DirectSoundOut myDSO;
-        private MemoryStream   myMS;
+        [DllImport("winmm.dll")]
+        static extern Int32 mciSendString(string command, IntPtr buffPtr, int bufferSize, IntPtr hwndCallback);
+
+        [DllImport("winmm.dll")]
+        static extern Int32 mciSendString(string command, StringBuilder returnValue, int returnLength, IntPtr hwndCallback);
+
         private bool m_bIsStopped = false;
+        private Sounds.SOUNDS m_SoundType;
 
-        public FX( byte[] data )
+        private Dictionary<Sounds.SOUNDS, string> m_soundDictionary = new Dictionary<Sounds.SOUNDS, string>();
+        private string m_sFileName;
+
+        private string m_curAlias = "";
+        private IntPtr hwndCanvas;
+
+        private long medialengthInTicks;
+        private long canFireNext;
+        private string m_sFullOpenText;
+
+
+        [System.Flags]
+        public enum PlaySoundFlags : uint
         {
-            // Build the memory stream for quick async playing with the Sound player. 
-            myMS = new MemoryStream();
-            myMS.Write(data, 0, data.Length);
-            myMS.Position = 0;
+            SND_SYNC = 0x0000,
+            SND_ASYNC = 0x0001,
+            SND_NODEFAULT = 0x0002,
+            SND_MEMORY = 0x0004,
+            SND_LOOP = 0x0008,
+            SND_NOSTOP = 0x0010,
+            SND_NOWAIT = 0x00002000,
+            SND_FILENAME = 0x00020000,
+            SND_RESOURCE = 0x00040004
+        }
 
-            myWave = new WaveFileReader(myMS);
-            myReduce = new BlockAlignReductionStream(myWave);
-            myProvider = new Wave16ToFloatProvider(myReduce);
+        public enum PlaySoundStatus: uint
+        {
+            CLOSED = 0,
+            NOTREADY = 1,
+            PAUSED = 2,
+            PLAYING = 3,
+            STOPPED = 4
+        }
 
-            myDSO = new DirectSoundOut();
-            myDSO.Init(myProvider);
-            myDSO.PlaybackStopped += MyDSO_PlaybackStopped;
+        public FX(IntPtr hwnd, Sounds.SOUNDS curSoundType, string fileName )
+        {
+            hwndCanvas = hwnd;
+            m_sFileName = fileName;
+
+            m_curAlias = getUniqueAlias();
+            m_sFullOpenText = String.Format("open {0} type waveaudio alias {1}", m_sFileName, m_curAlias);
+            mciSendString(m_sFullOpenText, IntPtr.Zero, 0, IntPtr.Zero);
+
+            StringBuilder strReturn = new StringBuilder(256, 256);
+            int ret;
+            ret = mciSendString("status " + m_curAlias + " length", strReturn, strReturn.Capacity, IntPtr.Zero);
+            medialengthInTicks = new TimeSpan(0,0,0,0, System.Convert.ToInt32(strReturn.ToString())).Ticks;
+            canFireNext = System.DateTime.Now.Ticks;
+
+            m_SoundType = curSoundType;
             m_bIsStopped = true;
         }
 
-        private void MyDSO_PlaybackStopped(object sender, StoppedEventArgs e)
-        {
-            m_bIsStopped = true;
-        }
+        private static int m_nUID; 
+        private static int getUID { get { m_nUID = (m_nUID < int.MaxValue) ? m_nUID + 1 : 0; return m_nUID; }  }
+        private string getUniqueAlias() { return string.Format("temp{0}", getUID ); }
 
         public void Stop()
         {
-            myDSO.Stop();
-            myWave.Seek(0, SeekOrigin.Begin);
+            canFireNext = System.DateTime.Now.Ticks;
+            mciSendString(("stop " + m_curAlias), IntPtr.Zero, 0, IntPtr.Zero);
+            mciSendString((String.Format("seek {0} to start", m_curAlias)), IntPtr.Zero, 0, IntPtr.Zero);
             m_bIsStopped = true;
+            return;
         }
+
+        public bool IsPlaying() { return canFireNext > System.DateTime.Now.Ticks; }
+
+        public PlaySoundStatus getStatus()
+        {
+            StringBuilder strReturn = new StringBuilder(256, 256);
+            int ret;
+            ret = mciSendString("status " + m_curAlias  + " mode", strReturn, strReturn.Capacity, IntPtr.Zero);
+            switch(strReturn.ToString())
+            {
+                case "stopped":
+                    return PlaySoundStatus.STOPPED;
+                case "playing":
+                    return PlaySoundStatus.PLAYING;
+                case "paused":
+                    return PlaySoundStatus.PAUSED;
+                case "not ready":
+                    return PlaySoundStatus.NOTREADY;
+                default:
+                    return PlaySoundStatus.CLOSED;
+            }
+        }
+
+        private Thread myThread = null;
+        private string m_sSeekString;
+        private string m_sPlayData;
+        private List<Thread> m_Threads = new List<Thread>(10); // Specific for projectile use. 
 
         public void Play()
         {
-            if (m_bIsStopped)
+            if (myThread == null)
             {
-                // myReduce.Seek(0, SeekOrigin.Current);
-                myWave.Seek(0, SeekOrigin.Begin);
-                //myMS.Seek(0, SeekOrigin.Begin );
-                myDSO.Play();
-                m_bIsStopped = false;
+                m_sSeekString = (String.Format("seek {0} to start", m_curAlias));
+                m_sPlayData = (String.Format("play {0}", m_curAlias));
+                myThread = new Thread(() => playSound(m_sFullOpenText, m_sSeekString, m_sPlayData));
             }
+
+            if (m_SoundType == Sounds.SOUNDS.PROJECTILE)
+            {
+                Thread cur = new Thread(() => playSound(m_sFullOpenText, m_sSeekString, m_sPlayData));
+                cur.Start();
+                m_Threads.Add(cur);
+                for (int x = m_Threads.Count-1; x >= 0; x--)
+                {
+                    if (m_Threads[x].ThreadState == ThreadState.Stopped)
+                        m_Threads.RemoveAt(x);
+                }
+            }
+            else if ( !IsPlaying() && ( myThread.ThreadState == ThreadState.Unstarted  || myThread.ThreadState == ThreadState.Stopped ) )
+            {
+                myThread = new Thread(() => playSound(m_sFullOpenText, m_sSeekString, m_sPlayData));
+                myThread.Start();
+                canFireNext = System.DateTime.Now.AddTicks(medialengthInTicks).Ticks;
+            }
+
+        }
+
+        private static void playSound( string cmdOpenText, string cmdSeek, string cmdPlay )
+        {
+            mciSendString(cmdOpenText, IntPtr.Zero, 0, IntPtr.Zero);
+            mciSendString(cmdSeek, IntPtr.Zero, 0, IntPtr.Zero);
+            mciSendString(cmdPlay, IntPtr.Zero, 0, IntPtr.Zero);
         }
     }
 
