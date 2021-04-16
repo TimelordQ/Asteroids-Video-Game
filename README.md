@@ -25,7 +25,7 @@ Dependencies:
   <li>Visual Studio 2017 Community Edition Available here: https://visualstudio.microsoft.com/vs/older-downloads/</li>
   </ul>
 
-CODE WALK THROUGH: <ul><li>https://www.youtube.com/watch?v=TG3cw-dZYtU<.li></ul>
+CODE WALK THROUGH: <ul><li>https://www.youtube.com/watch?v=TG3cw-dZYtU<<li></ul>
 
 That's it!
 
